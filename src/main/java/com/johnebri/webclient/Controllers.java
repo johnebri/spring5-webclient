@@ -21,6 +21,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.http.HttpStatus;
+
 @RestController
 @RequestMapping("/api/v1")
 public class Controllers {
@@ -39,7 +41,14 @@ public class Controllers {
 
 	@PostMapping("/login")
 	public Mono<String> Login(@RequestBody LoginDto loginDto) {
-		return webClient.post().uri("/api/Agents/Login").syncBody(loginDto).retrieve().bodyToMono(String.class);
+		return webClient.post().uri("/api/Agents/Login").syncBody(loginDto).retrieve()
+				
+				.onStatus(HttpStatus::is4xxClientError,
+						clientResponse -> Mono.error(new CustomException("404 unsorported exception")))
+				.onStatus(HttpStatus::is5xxServerError,
+						clientResponse -> Mono.error(new CustomException("400 Server exception")))
+				
+				.bodyToMono(String.class);
 	}
 
 ////	@PostMapping("/login")
